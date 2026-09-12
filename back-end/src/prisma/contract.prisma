@@ -1,0 +1,177 @@
+// use prisma-8
+
+// ─── Enums ──────────────────────────────────────────────────────────────
+
+enum movement_type {
+  PUTAWAY    = "PUTAWAY"
+  PICK       = "PICK"
+  MOVE       = "MOVE"
+  ADJUSTMENT = "ADJUSTMENT"
+
+  @@type("pg/text@1")
+}
+
+enum audit_status {
+  PENDING = "PENDING"
+  DONE    = "DONE"
+
+  @@type("pg/text@1")
+}
+
+enum audit_result {
+  PASS = "PASS"
+  FAIL = "FAIL"
+
+  @@type("pg/text@1")
+}
+
+// ─── Warehouse hierarchy ────────────────────────────────────────────────
+
+model Warehouse {
+  id        Int               @id @default(autoincrement())
+  code      String            @unique
+  name      String
+  aisles    Aisle[]
+  createdAt TimestamptzString @default(now())
+}
+
+model Aisle {
+  id          Int               @id @default(autoincrement())
+  warehouse   Warehouse         @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  warehouseId Int
+  code        String
+  racks       Rack[]
+  createdAt   TimestamptzString @default(now())
+
+  @@unique([warehouseId, code])
+}
+
+model Rack {
+  id        Int               @id @default(autoincrement())
+  aisle     Aisle             @relation(fields: [aisleId], references: [id], onDelete: Cascade)
+  aisleId   Int
+  code      String
+  bins      Bin[]
+  createdAt TimestamptzString @default(now())
+
+  @@unique([aisleId, code])
+}
+
+// Bin: the audit unit. Carries the current risk score + the factor
+// breakdown that produced it, so the UI can answer "why" without
+// recomputing anything.
+model Bin {
+  id     Int    @id @default(autoincrement())
+  rack   Rack   @relation(fields: [rackId], references: [id], onDelete: Cascade)
+  rackId Int
+  code   String
+
+  riskScore     Int                @default(0)
+  scoreFactors  Jsonb?
+  lastScoredAt  TimestamptzString?
+  lastAuditedAt TimestamptzString?
+
+  pallets    Pallet[]
+  movements  StockMovement[]
+  auditTasks AuditTask[]
+
+  createdAt TimestamptzString @default(now())
+
+  @@unique([rackId, code])
+  @@index([riskScore])
+}
+
+// ─── Inventory ──────────────────────────────────────────────────────────
+
+model Product {
+  id          Int               @id @default(autoincrement())
+  sku         String            @unique
+  name        String
+  palletItems PalletItem[]
+  movements   StockMovement[]
+  createdAt   TimestamptzString @default(now())
+}
+
+// A pallet sits in at most one bin at a time. `binId` is null once a
+// pallet has been fully picked out of the warehouse.
+model Pallet {
+  id        Int               @id @default(autoincrement())
+  code      String            @unique
+  bin       Bin?              @relation(fields: [binId], references: [id], onDelete: SetNull)
+  binId     Int?
+  items     PalletItem[]
+  movements StockMovement[]
+  createdAt TimestamptzString @default(now())
+
+  @@index([binId])
+}
+
+model PalletItem {
+  id        Int     @id @default(autoincrement())
+  pallet    Pallet  @relation(fields: [palletId], references: [id], onDelete: Cascade)
+  palletId  Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productId Int
+  quantity  Int
+
+  @@unique([palletId, productId])
+}
+
+// ─── Activity log (drives the scoring factors) ─────────────────────────
+
+// One row per bin touched by an event. A MOVE writes two rows (one at the
+// origin, one at the destination) so per-bin aggregation stays a simple
+// `WHERE binId = X` - `relatedBinId` names the other side for display only,
+// it carries no FK so a bin can be deleted without orphaning history.
+model StockMovement {
+  id           Int               @id @default(autoincrement())
+  type         movement_type
+  bin          Bin               @relation(fields: [binId], references: [id], onDelete: Cascade)
+  binId        Int
+  relatedBinId Int?
+  pallet       Pallet?           @relation(fields: [palletId], references: [id], onDelete: SetNull)
+  palletId     Int?
+  product      Product?          @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productId    Int?
+  quantity     Int
+  note         String?
+  createdAt    TimestamptzString @default(now())
+
+  @@index([binId, createdAt])
+  @@index([type, createdAt])
+}
+
+// ─── Audit workflow ─────────────────────────────────────────────────────
+
+model AuditPlan {
+  id        Int               @id @default(autoincrement())
+  name      String
+  topN      Int
+  tasks     AuditTask[]
+  createdAt TimestamptzString @default(now())
+}
+
+// One task per bin to audit. Carries the count-flow result inline (no
+// separate "audit record" table) since a task is 1:1 with a count.
+// `planId` is nullable so the mobile count flow can also open an ad-hoc
+// audit for a scanned bin that isn't on any generated plan.
+model AuditTask {
+  id                  Int          @id @default(autoincrement())
+  plan                AuditPlan?   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  planId              Int?
+  bin                 Bin          @relation(fields: [binId], references: [id], onDelete: Cascade)
+  binId               Int
+  status              audit_status @default(PENDING)
+  riskScoreAtCreation Int
+
+  expectedQuantity Int?
+  countedQuantity  Int?
+  result           audit_result?
+  notes            String?
+  completedAt      TimestamptzString?
+
+  createdAt TimestamptzString @default(now())
+
+  @@index([status])
+  @@index([binId])
+}
