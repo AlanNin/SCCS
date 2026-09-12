@@ -47,8 +47,7 @@ export class AuditTasksService {
     return this.taskDetail(id);
   }
 
-  // Entry point for "search or scan bin code": reuse the bin's pending
-  // task if one exists, otherwise open an ad-hoc audit for it.
+  // Reuses the bin's pending task if one exists, otherwise opens an ad-hoc audit.
   async findOrCreateForBin(binId: number) {
     const existing = await this.db.orm.public.AuditTask.where({ binId, status: 'PENDING' })
       .orderBy([(t) => t.createdAt.desc()])

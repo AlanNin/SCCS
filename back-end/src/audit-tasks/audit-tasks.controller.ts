@@ -15,7 +15,6 @@ export class AuditTasksController {
     return this.auditTasksService.findAll(query);
   }
 
-  // Entry point for the mobile count flow after a bin search/scan.
   @ApiOperation({
     summary: "Get (or open) the pending audit task for a bin - the mobile count flow's entry point",
   })

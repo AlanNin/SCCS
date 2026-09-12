@@ -8,11 +8,7 @@ import {
 import type { Request, Response } from 'express';
 import { Observable, tap } from 'rxjs';
 
-/**
- * Logs every completed request (method, path, status, latency). Errors are
- * deliberately left to HttpExceptionFilter - logging them here too would
- * double-log the same failure.
- */
+/** Logs every completed request. Errors are left to HttpExceptionFilter to avoid double-logging. */
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
   private readonly logger = new Logger('HTTP');

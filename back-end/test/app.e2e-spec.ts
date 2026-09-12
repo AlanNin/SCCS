@@ -25,9 +25,7 @@ describe('AppController (e2e)', () => {
   });
 
   it('404s on a route no controller matches', async () => {
-    // Unmatched routes never reach a controller, so they're handled by the
-    // platform's default 404 (plain text), not HttpExceptionFilter's JSON
-    // body - that shape is covered by the per-resource 404 tests instead.
+    // Unmatched routes skip HttpExceptionFilter; per-resource tests cover that JSON shape.
     await request(app.getHttpServer()).get('/api/does-not-exist').expect(404);
   });
 });

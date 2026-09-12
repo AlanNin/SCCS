@@ -6,12 +6,7 @@ import { resolveSwaggerCredentials } from './swagger-credentials.js';
 const DOCS_PATH = 'docs';
 const logger = new Logger('Swagger');
 
-/**
- * Mounts the OpenAPI UI at /docs behind HTTP Basic Auth (the browser's
- * native password prompt - `challenge: true`), gated by SWAGGER_USER /
- * SWAGGER_PASSWORD. Credentials are required outside development so the
- * docs never accidentally ship open in a deployed environment.
- */
+/** Mounts the OpenAPI UI at /docs behind HTTP Basic Auth (browser password prompt). */
 export function setupSwagger(app: INestApplication): void {
   const { user, password, usingDefaults } = resolveSwaggerCredentials(process.env);
 

@@ -7,9 +7,7 @@ export const SCORE_WEIGHTS = {
   productDiversity: 0.05,
 } as const;
 
-// A bin this many days (or more) since its last audit is treated as
-// maximally risky on that factor alone. Never-audited bins fall back to
-// days-since-created on the same scale.
+// Days since last audit at which the staleness factor maxes out.
 export const STALE_AUDIT_CAP_DAYS = 60;
 
 // Activity window used for the movement / adjustment factors.

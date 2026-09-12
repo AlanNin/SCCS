@@ -7,8 +7,7 @@ import { requireRelation } from '../common/require-relation.js';
 export class BinsService {
   constructor(@Inject(DB) private readonly db: Db) {}
 
-  // Flat list, grouping info included so the front-end can lay bins out
-  // per aisle/rack without extra round-trips.
+  // Flat list with grouping info, so the front-end can lay bins out per aisle/rack.
   async findAllForHeatmap() {
     const bins = await this.db.orm.public.Bin.select(
       'id',

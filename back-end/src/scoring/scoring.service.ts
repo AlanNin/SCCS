@@ -8,13 +8,7 @@ export class ScoringService {
 
   constructor(@Inject(DB) private readonly db: Db) {}
 
-  /**
-   * Recomputes every bin's risk score from current activity data and
-   * persists both the score and its factor breakdown. Recomputing the
-   * whole warehouse (rather than one bin) keeps the min-max normalized
-   * factors consistent with each other - the dataset is small enough
-   * (tens of bins) that this is cheap.
-   */
+  // Always whole-warehouse: several factors normalize relative to the batch.
   async recomputeAll() {
     const result = await recomputeAllBinScores(this.db);
     this.logger.log(`Recomputed risk scores for ${result.updatedBins} bin(s)`);

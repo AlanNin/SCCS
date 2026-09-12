@@ -5,12 +5,7 @@ export interface SwaggerCredentials {
   usingDefaults: boolean;
 }
 
-/**
- * Resolves the Basic Auth credentials guarding /docs. Pulled out of
- * swagger.setup.ts as a pure function so the three cases (both set,
- * missing in dev, missing in production) are unit-testable without
- * constructing a real Nest application.
- */
+/** Resolves the Basic Auth credentials guarding /docs; a pure function for easy unit testing. */
 export function resolveSwaggerCredentials(env: NodeJS.ProcessEnv): SwaggerCredentials {
   const user = env.SWAGGER_USER;
   const password = env.SWAGGER_PASSWORD;

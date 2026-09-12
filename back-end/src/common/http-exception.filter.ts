@@ -15,12 +15,7 @@ interface ErrorBody {
   timestamp: string;
 }
 
-/**
- * Global error handler: normalizes every thrown error (Nest HttpExceptions
- * and anything unexpected) into one JSON shape, and logs it - 5xx at error
- * level with a stack trace, 4xx at warn level - so failures are never
- * silent, whether they're a bug or a bad request.
- */
+/** Normalizes every thrown error into one JSON shape and logs it (5xx at error level, 4xx at warn). */
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger('ExceptionFilter');

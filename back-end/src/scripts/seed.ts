@@ -1,18 +1,11 @@
-// Seeds a small warehouse (3 aisles x 2 racks x 5 bins = 30 bins), fake
-// pallets/products, ~30 days of simulated activity, and a slice of audit
-// history - then recomputes risk scores so the app opens with a populated
-// heatmap. Run with `npm run seed`, or `npm run seed -- --reset` to wipe
-// any previously-seeded data first (the script itself is not idempotent -
-// re-running it into a non-empty DB fails on Warehouse.code's unique
-// constraint).
+// Seeds a demo warehouse with activity + audit history. Run with
+// `npm run seed`, or `-- --reset` to wipe previously-seeded data first.
 import { db } from '../prisma/db.js';
 import { recomputeAllBinScores } from '../scoring/scoring.logic.js';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-// Deletes seed-owned rows in dependency order (children before parents) so
-// it works regardless of which relations cascade. Not a generic "wipe the
-// database" - it only clears tables this script owns.
+// Deletes seed-owned rows in dependency order; scoped to this script's own tables.
 async function resetDatabase() {
   console.log('--reset: clearing existing data...');
   await db.transaction(async (tx) => {
@@ -113,8 +106,7 @@ async function main() {
   }
   console.log(`Created ${products.length} products.`);
 
-  // Fill most bins with 1-2 pallets carrying 1-3 product lines each; leave
-  // some empty so the heatmap shows realistic gaps.
+  // Leave some bins empty so the heatmap shows realistic gaps.
   let palletSeq = 1;
   for (const bin of bins) {
     if (Math.random() < 0.15) continue;
@@ -193,8 +185,7 @@ async function main() {
     }
   }
 
-  // Bias a handful of bins toward heavy adjustment activity so the heatmap
-  // shows a clear high-risk cluster, not a uniform wash of yellow.
+  // Bias a few bins toward heavy adjustments so the heatmap shows a clear high-risk cluster.
   const hotBins = sample(bins, 4);
   for (const bin of hotBins) {
     for (let i = 0; i < 6; i++) {
@@ -211,9 +202,7 @@ async function main() {
   }
   console.log(`Created ${movementCount} stock movement events.`);
 
-  // Seed audit history: some bins were audited recently (pass or fail),
-  // most were never audited, so the "days since last audit" factor has
-  // real spread from day one.
+  // Most bins stay never-audited so "days since last audit" has real spread.
   const historicalPlan = await db.orm.public.AuditPlan.create({
     name: 'Historical audits (seed data)',
     topN: 0,

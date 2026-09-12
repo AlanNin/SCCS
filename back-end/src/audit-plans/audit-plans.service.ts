@@ -62,8 +62,7 @@ export class AuditPlansService {
     }));
   }
 
-  // Accepts an optional transaction handle so `create()` can read back the
-  // freshly-created plan inside the same transaction.
+  // Optional tx handle lets `create()` read back the plan in the same transaction.
   async findOne(id: number, dbHandle: Pick<Db, 'orm'> = this.db) {
     const plan = await dbHandle.orm.public.AuditPlan.where({ id })
       .include('tasks', (tasks) =>

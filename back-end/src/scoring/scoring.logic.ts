@@ -43,17 +43,12 @@ interface RawBinMetrics {
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-// Min-max scale `raw` against the batch's own [min, max] range so a factor
-// reads relative to this warehouse's current activity, not an arbitrary
-// fixed ceiling. A flat batch (max === min) normalizes to 0 for everyone -
-// there is no signal to rank on.
+// Scales `raw` against the batch's own [min, max]; a flat batch normalizes to 0.
 function minMaxNormalize(raw: number, min: number, max: number): number {
   if (max <= min) return 0;
   return ((raw - min) / (max - min)) * 100;
 }
 
-// capAt is always the fixed, positive STALE_AUDIT_CAP_DAYS constant - no
-// runtime input ever makes it <= 0, so there's no branch to guard here.
 function capNormalize(raw: number, capAt: number): number {
   return Math.min(100, (raw / capAt) * 100);
 }
@@ -80,11 +75,7 @@ function withContribution(normalized: number, raw: number, weight: number): Fact
   };
 }
 
-/**
- * Reads the raw signals every scoring factor is built from: activity in the
- * lookback window, current audit staleness, distinct SKUs on hand, and
- * historical audit outcomes.
- */
+/** Reads the raw signals every scoring factor is built from. */
 export async function collectRawMetrics(db: Pick<Db, 'orm'>): Promise<RawBinMetrics[]> {
   const now = Date.now();
   const activityCutoffIso = new Date(now - ACTIVITY_WINDOW_DAYS * MS_PER_DAY).toISOString();
@@ -183,8 +174,7 @@ export function scoreBins(raw: RawBinMetrics[], computedAt: string = new Date().
   });
 }
 
-/** Recomputes and persists risk scores for every bin. Shared by the API's
- * recompute endpoint and the seed script, so both use one scoring path. */
+/** Recomputes and persists risk scores for every bin. */
 export async function recomputeAllBinScores(
   db: Pick<Db, 'orm' | 'transaction'>,
 ): Promise<{ updatedBins: number; computedAt: string }> {
@@ -196,8 +186,7 @@ export async function recomputeAllBinScores(
     for (const bin of scored) {
       await tx.orm.public.Bin.where({ id: bin.binId }).update({
         riskScore: bin.score,
-        // BinScoreFactors is a plain JSON-shaped object at runtime; the
-        // named-fields interface just isn't structurally a JsonValue.
+        // BinScoreFactors is plain JSON at runtime, just not structurally a JsonValue.
         scoreFactors: bin.scoreFactors as unknown as JsonValue,
         lastScoredAt: computedAt,
       });

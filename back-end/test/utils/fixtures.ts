@@ -22,11 +22,7 @@ export interface TestWarehouseFixture {
   cleanup: () => Promise<void>;
 }
 
-/**
- * Creates a small, uniquely-coded warehouse (own aisle/rack/bins/products)
- * so e2e tests never collide with each other or with real seeded data, and
- * can be torn down precisely via `cleanup()`.
- */
+/** Creates a small, uniquely-coded warehouse fixture so e2e tests never collide with each other. */
 export async function createTestWarehouse(
   options: { binCount?: number; productCount?: number } = {},
 ): Promise<TestWarehouseFixture> {

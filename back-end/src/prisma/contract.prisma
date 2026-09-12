@@ -57,9 +57,7 @@ model Rack {
   @@unique([aisleId, code])
 }
 
-// Bin: the audit unit. Carries the current risk score + the factor
-// breakdown that produced it, so the UI can answer "why" without
-// recomputing anything.
+// The audit unit: carries the current risk score and its factor breakdown.
 model Bin {
   id     Int    @id @default(autoincrement())
   rack   Rack   @relation(fields: [rackId], references: [id], onDelete: Cascade)
@@ -92,8 +90,7 @@ model Product {
   createdAt   TimestamptzString @default(now())
 }
 
-// A pallet sits in at most one bin at a time. `binId` is null once a
-// pallet has been fully picked out of the warehouse.
+// `binId` is null once a pallet has been fully picked out of the warehouse.
 model Pallet {
   id        Int               @id @default(autoincrement())
   code      String            @unique
@@ -119,10 +116,8 @@ model PalletItem {
 
 // ─── Activity log (drives the scoring factors) ─────────────────────────
 
-// One row per bin touched by an event. A MOVE writes two rows (one at the
-// origin, one at the destination) so per-bin aggregation stays a simple
-// `WHERE binId = X` - `relatedBinId` names the other side for display only,
-// it carries no FK so a bin can be deleted without orphaning history.
+// A MOVE writes two rows (origin + destination) so per-bin aggregation
+// stays a simple `WHERE binId = X`.
 model StockMovement {
   id           Int               @id @default(autoincrement())
   type         movement_type
@@ -151,10 +146,7 @@ model AuditPlan {
   createdAt TimestamptzString @default(now())
 }
 
-// One task per bin to audit. Carries the count-flow result inline (no
-// separate "audit record" table) since a task is 1:1 with a count.
-// `planId` is nullable so the mobile count flow can also open an ad-hoc
-// audit for a scanned bin that isn't on any generated plan.
+// Carries the count-flow result inline; `planId` is nullable for ad-hoc audits.
 model AuditTask {
   id                  Int          @id @default(autoincrement())
   plan                AuditPlan?   @relation(fields: [planId], references: [id], onDelete: Cascade)
