@@ -36,7 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full bg-muted/40">
         <Providers>
           <AppShell>{children}</AppShell>
-          <Toaster richColors position="top-center" />
+          <Toaster richColors />
         </Providers>
       </body>
     </html>

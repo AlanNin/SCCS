@@ -36,7 +36,7 @@ export function BinDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full gap-0 overflow-hidden p-0 sm:max-w-md"
+        className="gap-0 overflow-hidden p-0 data-[side=right]:w-[89%] data-[side=right]:sm:max-w-md"
       >
         {isPending && open && (
           <div className="space-y-4 p-6">
@@ -158,6 +158,23 @@ export function BinDetailSheet({
                     ))}
                   </ul>
                 )}
+                <ul className="flex flex-col mt-2">
+                  <li className="rounded-lg border bg-card w-full justify-between flex p-3">
+                    <span className="truncate pr-2 font-bold">Total</span>
+                    <span className="shrink-0 font-mono text-muted-foreground">
+                      ×
+                      {data.pallets.reduce(
+                        (sum, pallet) =>
+                          sum +
+                          pallet.items.reduce(
+                            (itemSum, item) => itemSum + item.quantity,
+                            0,
+                          ),
+                        0,
+                      )}
+                    </span>
+                  </li>
+                </ul>
               </div>
 
               <Button asChild size="lg" className="mt-1">

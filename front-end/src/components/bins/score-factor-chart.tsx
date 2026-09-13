@@ -15,6 +15,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import type { BinScoreFactors } from "@/types/api";
+import { useIsMobile } from "@/hooks/use-media-query";
 
 const FACTOR_LABELS: Record<keyof BinScoreFactors["factors"], string> = {
   daysSinceLastAudit: "Days since audit",
@@ -39,6 +40,7 @@ export function ScoreFactorChart({
 }: {
   scoreFactors: BinScoreFactors;
 }) {
+  const isMobile = useIsMobile();
   const data = (
     Object.keys(scoreFactors.factors) as (keyof BinScoreFactors["factors"])[]
   ).map((key) => {
@@ -69,22 +71,24 @@ export function ScoreFactorChart({
           axisLine={false}
           tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
         />
-        <ChartTooltip
-          cursor={false}
-          content={
-            <ChartTooltipContent
-              formatter={(value, _name, item) => (
-                <div className="flex w-full items-center justify-between gap-4">
-                  <span>Normalized</span>
-                  <span className="font-mono font-medium">
-                    {Number(value).toFixed(0)}% (+
-                    {item.payload.contribution.toFixed(1)} pts)
-                  </span>
-                </div>
-              )}
-            />
-          }
-        />
+        {!isMobile && (
+          <ChartTooltip
+            cursor={false}
+            content={
+              <ChartTooltipContent
+                formatter={(value, _name, item) => (
+                  <div className="flex w-full items-center justify-between gap-4">
+                    <span>Normalized</span>
+                    <span className="font-mono font-medium">
+                      {Number(value).toFixed(0)}% (+
+                      {item.payload.contribution.toFixed(1)} pts)
+                    </span>
+                  </div>
+                )}
+              />
+            }
+          />
+        )}
         <Bar dataKey="normalized" fill={BAR_COLOR} radius={4} maxBarSize={20}>
           <LabelList
             dataKey="contribution"
