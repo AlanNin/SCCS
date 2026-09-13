@@ -65,16 +65,16 @@ reseeding. It's scoped to those tables, not a full database wipe.
 
 ## Scripts
 
-| Command | What it does |
-|---|---|
-| `npm run start:dev` | Run the API with file-watch reload. |
-| `npm run seed` | Seed the demo warehouse (see above). |
+| Command                 | What it does                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| `npm run start:dev`     | Run the API with file-watch reload.                                           |
+| `npm run seed`          | Seed the demo warehouse (see above).                                          |
 | `npm run contract:emit` | Regenerate `contract.json` / `contract.d.ts` after editing `contract.prisma`. |
-| `npm test` | Unit tests (Vitest). |
-| `npm run test:e2e` | End-to-end tests (boots the Nest app in-process, hits a real database). |
-| `npm run test:cov` | Unit + e2e tests together with coverage, thresholds enforced at 90%. |
-| `npm run lint` | oxlint over `src/` and `test/`. |
-| `npm run build` | Compile to `dist/`. |
+| `npm test`              | Unit tests (Vitest).                                                          |
+| `npm run test:e2e`      | End-to-end tests (boots the Nest app in-process, hits a real database).       |
+| `npm run test:cov`      | Unit + e2e tests together with coverage, thresholds enforced at 90%.          |
+| `npm run lint`          | oxlint over `src/` and `test/`.                                               |
+| `npm run build`         | Compile to `dist/`.                                                           |
 
 ## Data model
 
@@ -103,19 +103,19 @@ Full field list: [`src/prisma/contract.prisma`](src/prisma/contract.prisma).
 Every bin gets a 0–100 **risk score** = a weighted sum of five 0–100 factors. Weights and the
 30-day activity window live in [`src/scoring/scoring.constants.ts`](src/scoring/scoring.constants.ts):
 
-| Factor | Weight | What it measures | Normalization |
-|---|---|---|---|
-| Days since last audit | 30% | Staleness - a bin nobody has checked in a while is a blind spot. Never-audited bins fall back to days-since-created. | Capped linear: `min(100, days / 60 * 100)` - 60+ days is maximally stale. |
-| Movement frequency | 25% | Putaways + picks + moves in the last 30 days. More handling = more chances for a miscount. | Min-max across the current bin set. |
-| Adjustment frequency | 25% | Manual inventory adjustments in the last 30 days - a direct signal that counts have been wrong before. | Min-max across the current bin set. |
-| Audit fail rate | 15% | % of this bin's past completed audits that were marked FAIL. 0 when the bin has no audit history yet (no evidence either way). | Already a 0–100 percentage. |
-| Product (SKU) diversity | 5% | Distinct products currently stored in the bin. More SKUs sharing a slot raises mispick/miscount risk. | Min-max across the current bin set. |
+| Factor                  | Weight | What it measures                                                                                                               | Normalization                                                             |
+| ----------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| Days since last audit   | 30%    | Staleness - a bin nobody has checked in a while is a blind spot. Never-audited bins fall back to days-since-created.           | Capped linear: `min(100, days / 60 * 100)` - 60+ days is maximally stale. |
+| Movement frequency      | 25%    | Putaways + picks + moves in the last 30 days. More handling = more chances for a miscount.                                     | Min-max across the current bin set.                                       |
+| Adjustment frequency    | 25%    | Manual inventory adjustments in the last 30 days - a direct signal that counts have been wrong before.                         | Min-max across the current bin set.                                       |
+| Audit fail rate         | 15%    | % of this bin's past completed audits that were marked FAIL. 0 when the bin has no audit history yet (no evidence either way). | Already a 0–100 percentage.                                               |
+| Product (SKU) diversity | 5%     | Distinct products currently stored in the bin. More SKUs sharing a slot raises mispick/miscount risk.                          | Min-max across the current bin set.                                       |
 
 `score = round(Σ normalized[factor] × weight[factor])`, clamped to `[0, 100]`.
 
 **Why min-max instead of a fixed scale for activity/diversity:** absolute movement counts don't
 mean anything on their own (a 50-bin warehouse and a 500-bin warehouse have very different
-"busy"), so those three factors are scaled relative to *this* bin set's own current min/max. Days-
+"busy"), so those three factors are scaled relative to _this_ bin set's own current min/max. Days-
 since-audit and audit-fail-rate are naturally bounded (a calendar day count and a percentage), so
 they use a fixed cap / no scaling. If every bin ties on a min-max factor, it contributes 0 for
 everyone - there's no signal to rank on.
@@ -134,19 +134,19 @@ Heatmap color bands (`src/common/risk-band.ts`): **< 34 green (low)**, **34–66
 
 All routes are prefixed `/api`.
 
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/bins` | Heatmap data: every bin with its score, color band, and aisle/rack/warehouse grouping. |
-| `GET` | `/bins/:id` | Bin detail: score, factor breakdown, last audit date, pallets/products currently stored. |
-| `GET` | `/bins/search?q=` | Search bins by code (mobile count flow's "search or scan"). |
-| `POST` | `/scoring/recompute` | Recompute every bin's risk score. |
-| `POST` | `/audit-plans` | `{ topN, name? }` → creates a plan and one `PENDING` task per top-N riskiest bin. |
-| `GET` | `/audit-plans` | List plans with pending/done task counts. |
-| `GET` | `/audit-plans/:id` | Plan detail with its tasks. |
-| `GET` | `/audit-tasks?status=PENDING\|DONE` | Table view of tasks. |
-| `GET` | `/audit-tasks/:id` | Task detail for the count page (bin, expected pallets/products). |
-| `GET` | `/audit-tasks/by-bin/:binId` | Entry point for search-and-count: returns the bin's pending task, or creates an ad-hoc one. |
-| `POST` | `/audit-tasks/:id/count` | `{ countedQuantity, result: 'PASS'\|'FAIL', notes? }` → completes the task, stamps `Bin.lastAuditedAt`, triggers a full score recompute. |
+| Method | Path                                | Purpose                                                                                                                                  |
+| ------ | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/bins`                             | Heatmap data: every bin with its score, color band, and aisle/rack/warehouse grouping.                                                   |
+| `GET`  | `/bins/:id`                         | Bin detail: score, factor breakdown, last audit date, pallets/products currently stored.                                                 |
+| `GET`  | `/bins/search?q=`                   | Search bins by code (mobile count flow's "search or scan").                                                                              |
+| `POST` | `/scoring/recompute`                | Recompute every bin's risk score.                                                                                                        |
+| `POST` | `/audit-plans`                      | `{ topN, name? }` → creates a plan and one `PENDING` task per top-N riskiest bin.                                                        |
+| `GET`  | `/audit-plans`                      | List plans with pending/done task counts.                                                                                                |
+| `GET`  | `/audit-plans/:id`                  | Plan detail with its tasks.                                                                                                              |
+| `GET`  | `/audit-tasks?status=PENDING\|DONE` | Table view of tasks.                                                                                                                     |
+| `GET`  | `/audit-tasks/:id`                  | Task detail for the count page (bin, expected pallets/products).                                                                         |
+| `GET`  | `/audit-tasks/by-bin/:binId`        | Entry point for search-and-count: returns the bin's pending task, or creates an ad-hoc one.                                              |
+| `POST` | `/audit-tasks/:id/count`            | `{ countedQuantity, result: 'PASS'\|'FAIL', notes? }` → completes the task, stamps `Bin.lastAuditedAt`, triggers a full score recompute. |
 
 ## API documentation
 
@@ -205,9 +205,45 @@ that. `main.ts` (bootstrap entry) and `src/scripts/**` (the seed script) are exc
 coverage target - one is a thin `app.listen()` call, the other is a data-generation CLI tool, not
 API surface.
 
+## Deploying to Vercel
+
+`src/main.ts` supports two run modes from the same file:
+
+- **Local dev / a traditional host (Railway, a VM, etc.):** the module-level `bootstrap().then(app
+  => app.listen(...))` call runs as normal, binding a real port.
+- **Vercel:** the same file's `export default async function handler(req, res)` reuses a
+  module-scoped cached Nest app (`let app`, built once, reused on every warm invocation) and
+  forwards the request straight to Express via `app.getHttpAdapter().getInstance()` - no
+  `app.listen()` involved, since Vercel owns the actual HTTP server.
+
+[`api/index.ts`](api/index.ts) just re-exports that handler, and [`vercel.json`](vercel.json)
+rewrites every path to it, so `/api/*` and `/docs` both reach the one function and Nest's own
+routing takes it from there. Prisma 8's `@prisma/orm-postgres` has no native binary/WASM engine -
+it talks to Postgres over the plain `pg` driver - so there's nothing bundler-unfriendly to work
+around.
+
+1. **Import the repo, set the Root Directory to `back-end`.** This is a two-app monorepo; the
+   front-end needs its own separate Vercel project with its Root Directory set to `front-end`.
+2. **Set environment variables** in the Vercel project (Settings → Environment Variables):
+   - `DATABASE_URL` - **use a pooled connection string**, not a direct one. A serverless function
+     can scale to many concurrent instances, each opening its own connection; an unpooled URL
+     exhausts Postgres's connection limit fast. For Supabase, that's the
+     `...pooler.supabase.com:6543` URL with `?pgbouncer=true` (see the Supabase note above).
+   - `SWAGGER_USER`, `SWAGGER_PASSWORD` - **required**, not optional, on Vercel. Vercel builds set
+     `NODE_ENV=production`, and `resolveSwaggerCredentials` (see _API documentation_ above)
+     deliberately refuses to start the app at all if these are missing in production - so a
+     deploy without them fails on every request, not just `/docs`.
+   - Don't set `PORT` - it's only used by the local-dev/traditional-host branch above.
+3. **Point the front-end at it.** Once deployed, set the front-end's `API_URL` (its own Vercel
+   project's env vars) to `https://<this-project>.vercel.app/api` - the same `/api` prefix used
+   locally, nothing else changes on the front-end side.
+
+`.vercelignore` excludes dev-only tooling (agent skill folders, `test/`, `coverage/`) from the
+deployed function so it stays well under Vercel's 250 MB function size limit.
+
 ## Notable implementation choices / possible next steps
 
-- **Ad-hoc audits.** `AuditTask.planId` is nullable so the mobile count flow works for *any*
+- **Ad-hoc audits.** `AuditTask.planId` is nullable so the mobile count flow works for _any_
   scanned bin, not just ones already on a generated plan - `GET /audit-tasks/by-bin/:binId`
   reuses an existing pending task or opens a new standalone one.
 - **`scoreFactors` as JSON**, not a normalized factors table - it's write-once-per-recompute,
