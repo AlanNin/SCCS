@@ -1,0 +1,14 @@
+# Dev-only tooling and docs - not needed in the deployed function.
+.claude
+.agents
+.cursor
+.devin
+prisma-8.md
+
+# Tests and coverage output.
+test
+coverage
+
+# Local build artifacts - Vercel builds fresh.
+dist
+tsconfig.build.tsbuildinfo
