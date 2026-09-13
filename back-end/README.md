@@ -205,6 +205,42 @@ that. `main.ts` (bootstrap entry) and `src/scripts/**` (the seed script) are exc
 coverage target - one is a thin `app.listen()` call, the other is a data-generation CLI tool, not
 API surface.
 
+## Deploying to Vercel
+
+`src/main.ts` supports two run modes from the same file:
+
+- **Local dev / a traditional host (Railway, a VM, etc.):** the module-level `bootstrap().then(app
+  => app.listen(...))` call runs as normal, binding a real port.
+- **Vercel:** the same file's `export default async function handler(req, res)` reuses a
+  module-scoped cached Nest app (`let app`, built once, reused on every warm invocation) and
+  forwards the request straight to Express via `app.getHttpAdapter().getInstance()` - no
+  `app.listen()` involved, since Vercel owns the actual HTTP server.
+
+[`api/index.ts`](api/index.ts) just re-exports that handler, and [`vercel.json`](vercel.json)
+rewrites every path to it, so `/api/*` and `/docs` both reach the one function and Nest's own
+routing takes it from there. Prisma 8's `@prisma/orm-postgres` has no native binary/WASM engine -
+it talks to Postgres over the plain `pg` driver - so there's nothing bundler-unfriendly to work
+around.
+
+1. **Import the repo, set the Root Directory to `back-end`.** This is a two-app monorepo; the
+   front-end needs its own separate Vercel project with its Root Directory set to `front-end`.
+2. **Set environment variables** in the Vercel project (Settings → Environment Variables):
+   - `DATABASE_URL` - **use a pooled connection string**, not a direct one. A serverless function
+     can scale to many concurrent instances, each opening its own connection; an unpooled URL
+     exhausts Postgres's connection limit fast. For Supabase, that's the
+     `...pooler.supabase.com:6543` URL with `?pgbouncer=true` (see the Supabase note above).
+   - `SWAGGER_USER`, `SWAGGER_PASSWORD` - **required**, not optional, on Vercel. Vercel builds set
+     `NODE_ENV=production`, and `resolveSwaggerCredentials` (see _API documentation_ above)
+     deliberately refuses to start the app at all if these are missing in production - so a
+     deploy without them fails on every request, not just `/docs`.
+   - Don't set `PORT` - it's only used by the local-dev/traditional-host branch above.
+3. **Point the front-end at it.** Once deployed, set the front-end's `API_URL` (its own Vercel
+   project's env vars) to `https://<this-project>.vercel.app/api` - the same `/api` prefix used
+   locally, nothing else changes on the front-end side.
+
+`.vercelignore` excludes dev-only tooling (agent skill folders, `test/`, `coverage/`) from the
+deployed function so it stays well under Vercel's 250 MB function size limit.
+
 ## Notable implementation choices / possible next steps
 
 - **Ad-hoc audits.** `AuditTask.planId` is nullable so the mobile count flow works for _any_
