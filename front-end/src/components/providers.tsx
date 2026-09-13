@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { ApiError } from "@/lib/api/client";
 
 function makeQueryClient() {
   return new QueryClient({
@@ -13,6 +14,16 @@ function makeQueryClient() {
         // short stale time avoids redundant refetches without risking
         // visibly stale data between those actions.
         staleTime: 15_000,
+        // Don't burn through TanStack's default 3 retries (with backoff)
+        // when the backend is simply unreachable or the resource is a 404 —
+        // that just delays the error state for several seconds. Still retry
+        // a couple of times for other transient failures (5xx, flaky network).
+        retry: (failureCount, error) => {
+          if (error instanceof ApiError && (error.isUnreachable || error.isNotFound)) {
+            return false;
+          }
+          return failureCount < 2;
+        },
       },
     },
   });
