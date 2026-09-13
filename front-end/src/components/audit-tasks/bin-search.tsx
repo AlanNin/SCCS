@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Loader2, ScanLine, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { RiskBadge } from "@/components/bins/risk-badge";
 import { binSearchOptions } from "@/lib/api/bins";
 
@@ -18,7 +19,12 @@ export function BinSearch() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const { data: results, isFetching } = useQuery(binSearchOptions(debounced));
+  const {
+    data: results,
+    isFetching,
+    isError,
+    error,
+  } = useQuery(binSearchOptions(debounced));
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-5">
@@ -46,7 +52,14 @@ export function BinSearch() {
         )}
       </div>
 
-      {debounced.trim().length > 0 && results?.length === 0 && !isFetching && (
+      {isError && (
+        <Alert variant="destructive">
+          <AlertTitle>Couldn&apos;t search bins</AlertTitle>
+          <AlertDescription>{error.message}</AlertDescription>
+        </Alert>
+      )}
+
+      {debounced.trim().length > 0 && results?.length === 0 && !isFetching && !isError && (
         <p className="py-6 text-center text-sm text-muted-foreground">
           No bins match &quot;{debounced}&quot;.
         </p>
