@@ -86,9 +86,15 @@ async function main() {
 
   const bins: { id: number; code: string }[] = [];
   for (const aisleCode of aisleCodes) {
-    const aisle = await db.orm.public.Aisle.create({ warehouseId: warehouse.id, code: aisleCode });
+    const aisle = await db.orm.public.Aisle.create({
+      warehouseId: warehouse.id,
+      code: aisleCode,
+    });
     for (const rackCode of rackCodes) {
-      const rack = await db.orm.public.Rack.create({ aisleId: aisle.id, code: rackCode });
+      const rack = await db.orm.public.Rack.create({
+        aisleId: aisle.id,
+        code: rackCode,
+      });
       for (let i = 1; i <= binsPerRack; i++) {
         const code = `${aisleCode}-${rackCode}-B${String(i).padStart(2, '0')}`;
         const bin = await db.orm.public.Bin.create({ rackId: rack.id, code });
@@ -185,35 +191,90 @@ async function main() {
     }
   }
 
-  // Bias a few bins toward heavy adjustments so the heatmap shows a clear high-risk cluster.
-  const hotBins = sample(bins, 4);
-  for (const bin of hotBins) {
-    for (let i = 0; i < 6; i++) {
-      const createdAt = new Date(now - randomInt(0, 20) * MS_PER_DAY).toISOString();
-      await db.orm.public.StockMovement.create({
-        type: 'ADJUSTMENT',
-        binId: bin.id,
-        quantity: randomInt(1, 10) * (Math.random() < 0.5 ? -1 : 1),
-        note: 'Recurring discrepancy',
-        createdAt,
-      });
-      movementCount++;
-    }
-  }
-  console.log(`Created ${movementCount} stock movement events.`);
-
-  // Most bins stay never-audited so "days since last audit" has real spread.
   const historicalPlan = await db.orm.public.AuditPlan.create({
     name: 'Historical audits (seed data)',
     topN: 0,
   });
 
-  const auditedBins = sample(bins, 12);
+  // Force a handful of bins into clear high-risk territory - stale audits
+  // (daysSinceLastAudit caps its 100 at 60+ days), heavy recent movement and
+  // adjustments (both min-max normalized against the rest of the bin set, so
+  // these need to clearly outrank it, not just add a bit), and a bad fail
+  // history - so the heatmap actually has red to showcase, not just low/medium.
+  const highRiskBins = sample(bins, 3);
+  const highRiskBinIds = new Set(highRiskBins.map((b) => b.id));
+
+  for (const bin of highRiskBins) {
+    for (let i = 0; i < 10; i++) {
+      const createdAt = new Date(
+        now - randomInt(0, 25) * MS_PER_DAY,
+      ).toISOString();
+      await db.orm.public.StockMovement.create({
+        type: randomChoice(['PICK', 'PUTAWAY'] as const),
+        binId: bin.id,
+        quantity: randomInt(10, 60),
+        createdAt,
+      });
+      movementCount++;
+    }
+    for (let i = 0; i < 8; i++) {
+      const createdAt = new Date(
+        now - randomInt(0, 20) * MS_PER_DAY,
+      ).toISOString();
+      await db.orm.public.StockMovement.create({
+        type: 'ADJUSTMENT',
+        binId: bin.id,
+        quantity: randomInt(5, 15) * (Math.random() < 0.5 ? -1 : 1),
+        note: 'Recurring discrepancy',
+        createdAt,
+      });
+      movementCount++;
+    }
+
+    // Three failed audits, all 70-120 days ago - past the model's 60-day
+    // staleness cap, and Bin.lastAuditedAt is pinned to the most recent one.
+    let lastFailedAuditAt = '';
+    for (let i = 0; i < 3; i++) {
+      const auditedAt = new Date(
+        now - randomInt(70, 120) * MS_PER_DAY,
+      ).toISOString();
+      const expectedQuantity = randomInt(10, 150);
+      await db.orm.public.AuditTask.create({
+        planId: historicalPlan.id,
+        binId: bin.id,
+        status: 'DONE',
+        riskScoreAtCreation: 0,
+        expectedQuantity,
+        countedQuantity: expectedQuantity + randomInt(-20, -5),
+        result: 'FAIL',
+        completedAt: auditedAt,
+        createdAt: auditedAt,
+      });
+      if (!lastFailedAuditAt || auditedAt > lastFailedAuditAt)
+        lastFailedAuditAt = auditedAt;
+    }
+    await db.orm.public.Bin.where({ id: bin.id }).update({
+      lastAuditedAt: lastFailedAuditAt,
+    });
+  }
+  console.log(
+    `Created ${movementCount} stock movement events (${highRiskBins.length} bins forced high-risk).`,
+  );
+
+  // Most remaining bins stay never-audited so "days since last audit" has real spread.
+  const auditedBins = sample(
+    bins.filter((b) => !highRiskBinIds.has(b.id)),
+    12,
+  );
   for (const bin of auditedBins) {
-    const auditedAt = new Date(now - randomInt(1, 45) * MS_PER_DAY).toISOString();
+    const auditedAt = new Date(
+      now - randomInt(1, 45) * MS_PER_DAY,
+    ).toISOString();
     const passed = Math.random() > 0.3;
     const expectedQuantity = randomInt(10, 150);
-    const countedQuantity = passed ? expectedQuantity : expectedQuantity + randomInt(-15, -1);
+    const countedQuantity = passed
+      ? expectedQuantity
+      : expectedQuantity + randomInt(-15, -1);
 
     await db.orm.public.AuditTask.create({
       planId: historicalPlan.id,
@@ -227,9 +288,13 @@ async function main() {
       createdAt: auditedAt,
     });
 
-    await db.orm.public.Bin.where({ id: bin.id }).update({ lastAuditedAt: auditedAt });
+    await db.orm.public.Bin.where({ id: bin.id }).update({
+      lastAuditedAt: auditedAt,
+    });
   }
-  console.log(`Recorded ${auditedBins.length} historical audits.`);
+  console.log(
+    `Recorded ${auditedBins.length + highRiskBins.length} historical audits.`,
+  );
 
   const { updatedBins } = await recomputeAllBinScores(db);
   console.log(`Recomputed risk scores for ${updatedBins} bins.`);
