@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   resolve: {
     // Resolves the path aliases declared in tsconfig.json, including the
-    // ones added by `nest g library` — native Vite support, no plugin needed.
+    // ones added by `nest g library` - native Vite support, no plugin needed.
     tsconfigPaths: true,
   },
   test: {

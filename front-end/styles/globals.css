@@ -1,0 +1,160 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-status-good: var(--status-good);
+  --color-status-good-foreground: var(--status-good-foreground);
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-foreground: var(--status-warning-foreground);
+  --color-status-critical: var(--status-critical);
+  --color-status-critical-foreground: var(--status-critical-foreground);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: oklch(0.9911 0 0);
+  --foreground: oklch(0.185 0.008 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.185 0.008 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.185 0.008 260);
+  /* Brand accent - the same blue used for the score-factor chart bars, so
+     UI chrome and data viz read as one system, not two palettes. */
+  --primary: oklch(0.551 0.196 260.3);
+  --primary-foreground: oklch(0.99 0.005 260);
+  --secondary: oklch(0.965 0.004 260);
+  --secondary-foreground: oklch(0.24 0.02 260);
+  --muted: oklch(0.965 0.004 260);
+  --muted-foreground: oklch(0.499 0.014 260);
+  --accent: oklch(0.951 0.023 260);
+  --accent-foreground: oklch(0.32 0.06 260);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.914 0.006 260);
+  --input: oklch(0.914 0.006 260);
+  --ring: oklch(0.551 0.196 260.3);
+  --chart-1: oklch(0.551 0.196 260.3);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.75rem;
+  /* The sidebar is deliberately always-dark (a fixed "branded chrome"), not
+     tied to the light/dark content theme - the standard pattern in most
+     professional dashboards (Vercel, Supabase, Linear). */
+  --sidebar: oklch(0.225 0.035 262);
+  --sidebar-foreground: oklch(0.94 0.01 260);
+  --sidebar-primary: oklch(0.646 0.178 260.3);
+  --sidebar-primary-foreground: oklch(0.15 0.02 260);
+  --sidebar-accent: oklch(0.315 0.05 262);
+  --sidebar-accent-foreground: oklch(0.96 0.01 260);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.646 0.178 260.3);
+
+  /* Risk-band status palette (validated, mode-invariant - see dataviz skill). */
+  --status-good: #18b818;
+  --status-good-foreground: #ffffff;
+  --status-warning: rgb(240, 204, 2);
+  --status-warning-foreground: #1a1a19;
+  --status-critical: #d03b3b;
+  --status-critical-foreground: #ffffff;
+}
+
+.dark {
+  --background: oklch(0.16 0.008 260);
+  --foreground: oklch(0.96 0.004 260);
+  --card: oklch(0.205 0.01 260);
+  --card-foreground: oklch(0.96 0.004 260);
+  --popover: oklch(0.205 0.01 260);
+  --popover-foreground: oklch(0.96 0.004 260);
+  --primary: oklch(0.646 0.178 260.3);
+  --primary-foreground: oklch(0.15 0.02 260);
+  --secondary: oklch(0.269 0.012 260);
+  --secondary-foreground: oklch(0.96 0.004 260);
+  --muted: oklch(0.269 0.012 260);
+  --muted-foreground: oklch(0.665 0.014 260);
+  --accent: oklch(0.31 0.05 260);
+  --accent-foreground: oklch(0.92 0.02 260);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.646 0.178 260.3);
+  --chart-1: oklch(0.646 0.178 260.3);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.19 0.01 260);
+  --sidebar-foreground: oklch(0.96 0.004 260);
+  --sidebar-primary: oklch(0.646 0.178 260.3);
+  --sidebar-primary-foreground: oklch(0.15 0.02 260);
+  --sidebar-accent: oklch(0.31 0.05 260);
+  --sidebar-accent-foreground: oklch(0.92 0.02 260);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.646 0.178 260.3);
+
+  --status-good: #0ca30c;
+  --status-good-foreground: #ffffff;
+  --status-warning: #fab219;
+  --status-warning-foreground: #1a1a19;
+  --status-critical: #d03b3b;
+  --status-critical-foreground: #ffffff;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html {
+    @apply font-sans;
+  }
+}
